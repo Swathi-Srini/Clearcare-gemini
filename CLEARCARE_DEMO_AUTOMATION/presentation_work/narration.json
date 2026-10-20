@@ -1,0 +1,47 @@
+[
+  {
+    "id": "slide-01",
+    "text": "After a hospital stay, patients and family caregivers may be sent home with pages of instructions. ClearCare helps make those next steps easier to understand and organize, while keeping the care team’s original words in view.",
+    "duration": 12
+  },
+  {
+    "id": "slide-02",
+    "text": "The workflow starts with a discharge PDF. ClearCare reads text-based documents in the browser. The demonstration uses synthetic patient details, and uploaded files are not saved to an account.",
+    "duration": 11
+  },
+  {
+    "id": "slide-03",
+    "text": "Each extracted instruction stays connected to its source wording. Families can see the original line alongside the organized plan, instead of having to trust a summary on its own.",
+    "duration": 11
+  },
+  {
+    "id": "slide-04",
+    "text": "The core AI action is explicit. Nothing is sent just because the page opened. When a person chooses Explain simply, ClearCare sends only the selected instruction to the backend, which calls AMD Developer Cloud Token Factory using DeepSeek V4 Flash.",
+    "duration": 14
+  },
+  {
+    "id": "slide-05",
+    "text": "When an instruction is ambiguous, missing a unit, conflicting, or involves a high-risk medicine, ClearCare routes it for review. It does not silently choose a direction, confirm an item, or schedule an incomplete appointment.",
+    "duration": 13
+  },
+  {
+    "id": "slide-06",
+    "text": "The care plan uses a straightforward checklist, with separate checkboxes for separate tasks. Confirmed follow-ups can appear on the calendar and be exported as an ICS file. Items that still need review are not eligible for scheduling.",
+    "duration": 12
+  },
+  {
+    "id": "slide-07",
+    "text": "ClearCare includes English, Spanish, and Hindi settings, plus a Today view with a readable transcript and browser-based voice controls. People can type or speak a question and edit the text before sending it.",
+    "duration": 12
+  },
+  {
+    "id": "slide-08",
+    "text": "The AI runs through AMD Developer Cloud Token Factory, not locally through ROCm. The key remains on the backend. ClearCare is a prototype organizer and explainer, not a clinician, and the care team remains the source of medical direction.",
+    "duration": 13
+  },
+  {
+    "id": "slide-09",
+    "text": "ClearCare makes the next steps after discharge easier to see, understand, and organize. This is a synthetic-data prototype for the AMD Developer Hackathon. It does not diagnose or prescribe, and it never replaces guidance from the care team.",
+    "duration": 13
+  }
+]

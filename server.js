@@ -1,11 +1,15 @@
 import { createServer } from 'node:http';
+import { loadEnvFile } from './lib/load-env.js';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractPdfText } from './lib/pdf-text.js';
 import { extractCarePlan } from './lib/extract.js';
-import { explainInstruction } from './lib/amd-explainer.js';
+import { explainInstruction } from './lib/gemini-explainer.js';
 import { handleExtension, applySecurityHeaders, verifyLegacyExplanation } from './lib/ext/routes.js'; // OCP extension (see CHANGE_IMPACT_REPORT.md)
+
+// Load local settings before the server starts. Environment variables set by the shell win.
+loadEnvFile(fileURLToPath(new URL('./.env', import.meta.url)));
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const publicRoot = join(root, 'public');
@@ -20,7 +24,7 @@ async function handleRequest(req, res) {
   const pathname = new URL(req.url, 'http://localhost').pathname;
   applySecurityHeaders(res);
   if (await handleExtension(req, res, pathname)) return;
-  if (pathname === '/api/health') return json(res, 200, { mode: 'local-pdf-text-demo', aiConfigured: Boolean(process.env.RADEON_API_KEY), uploadsLeaveThisDevice: false });
+  if (pathname === '/api/health') return json(res, 200, { mode: 'local-pdf-text-demo', aiConfigured: Boolean(process.env.GEMINI_API_KEY), uploadsLeaveThisDevice: false });
   if (pathname === '/api/explain' && req.method === 'POST') {
     try {
       const contentType = req.headers['content-type'] || '';
@@ -56,7 +60,7 @@ async function handleRequest(req, res) {
 }
 export { handleRequest };
 const preferredPort = Number(process.env.PORT || 4174);
-console.log(`[ClearCare] AMD Token Factory explanations: ${process.env.RADEON_API_KEY ? 'RADEON_API_KEY is configured (value hidden).' : 'RADEON_API_KEY is NOT configured; real AMD requests will not be sent.'}`);
+console.log(`[ClearCare] Gemini API explanations: ${process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY is configured (value hidden).' : 'GEMINI_API_KEY is NOT configured; live Gemini requests will not be sent.'}`);
 function configure(server) {
   server.requestTimeout = 20_000;
   server.headersTimeout = 25_000;

@@ -1,21 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { explainInstruction, explanationCacheKey, resetExplanationStateForTests, AMD_BASE_URL, AMD_MODEL } from '../lib/amd-explainer.js';
+import { explainInstruction, explanationCacheKey, resetExplanationStateForTests, GEMINI_BASE_URL, GEMINI_MODEL } from '../lib/gemini-explainer.js';
 
-const ok = text => new Response(JSON.stringify({ choices: [{ message: { content: text } }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+const ok = text => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }], modelVersion: GEMINI_MODEL }), { status: 200, headers: { 'content-type': 'application/json' } });
 test.beforeEach(() => resetExplanationStateForTests());
 
-test('AMD request sends only selected instruction and fixed minimal safety prompt', async () => {
+test('Gemini request sends only selected instruction and fixed minimal safety prompt', async () => {
   let captured;
   const result = await explainInstruction({ instruction: 'Walk for 10 minutes twice a day as tolerated.', language: 'English' }, { apiKey: 'test-secret', fetchImpl: async (url, options) => { captured = { url, options, body: JSON.parse(options.body) }; return ok('Walk for 10 minutes two times each day, if you feel able.'); } });
-  assert.equal(captured.url, `${AMD_BASE_URL}/chat/completions`);
-  assert.equal(captured.options.headers.authorization, 'Bearer test-secret');
-  assert.equal(captured.body.model, AMD_MODEL);
-  assert.equal(captured.body.messages.length, 2);
-  assert.equal(captured.body.messages[1].content, 'Walk for 10 minutes twice a day as tolerated.');
+  assert.equal(captured.url, `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent`);
+  assert.equal(captured.options.headers['x-goog-api-key'], 'test-secret');
+  assert.equal(captured.body.contents.length, 1);
+  assert.equal(captured.body.contents[0].parts[0].text, 'Walk for 10 minutes twice a day as tolerated.');
   assert.equal(JSON.stringify(captured.body).includes('Jordan'), false);
   assert.equal(JSON.stringify(captured.body).includes('care plan'), false);
-  assert.match(captured.body.messages[0].content, /at most two short sentences/i);
+  assert.match(captured.body.systemInstruction.parts[0].text, /at most two short sentences/i);
   assert.equal(result.explanation, 'Walk for 10 minutes two times each day, if you feel able.');
 });
 
@@ -36,10 +35,10 @@ test('duplicate simultaneous requests share one provider call', async () => {
   const [ra, rb] = await Promise.all([a, b]); assert.equal(calls, 1); assert.equal(ra.explanation, rb.explanation);
 });
 
-test('ambiguous source still sends one AMD request and prompt forbids guessing', async () => {
+test('ambiguous source still sends one Gemini request and prompt forbids guessing', async () => {
   let calls = 0; let payload;
   const result = await explainInstruction({ instruction: 'Take insulin 8 (unit missing) before dinner.' }, { apiKey: 'test-secret', fetchImpl: async (_url, options) => { calls++; payload = JSON.parse(options.body); return ok('The dose unit is missing. Ask your care team to clarify it before taking this medicine.'); } });
-  assert.equal(calls, 1); assert.equal(payload.messages[1].content, 'Take insulin 8 (unit missing) before dinner.'); assert.match(payload.messages[0].content, /never guess/i); assert.match(result.explanation, /clarify/i);
+  assert.equal(calls, 1); assert.equal(payload.contents[0].parts[0].text, 'Take insulin 8 (unit missing) before dinner.'); assert.match(payload.systemInstruction.parts[0].text, /never guess/i); assert.match(result.explanation, /clarify/i);
 });
 
 test('rate limit, provider failure, missing key, and timeout surface controlled errors', async () => {

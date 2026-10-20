@@ -34,22 +34,31 @@ Six fictional, clearly labeled PDFs are in `discharge_pdf/`:
 
 Every file is marked synthetic and not for clinical use. The included text-based PDFs can now be uploaded and parsed locally. `06_unreadable_scan.pdf` contains illegible sample values, and tests verify these remain incomplete instead of being filled in.
 
-## Understand My Care Instructions (AMD Token Factory)
+## Gemini explanations and care questions
 
 Each medication and care instruction in **My care plan** has an **Explain simply** button. No request is made at page load. Clicking one button sends only that instruction and the selected language to the local backend; it never sends the PDF, full plan, patient identity, or conversation history.
 
-The backend calls `https://developer.amd.com.cn/radeon/api/v1/chat/completions` with model `DeepSeek-V4-Flash`. The AMD API key is read only from the backend environment variable `RADEON_API_KEY`. Do not put the key in frontend files or commit it. For PowerShell, set it in the current terminal before `npm start`:
+The backend calls Google's Gemini `generateContent` API using the stable `gemini-3.8-flash` model by default. The server loads the project-root `.env` file on startup on Node 18 and newer; shell environment variables take precedence. It reads `GEMINI_API_KEY` on the server only; an optional `GEMINI_MODEL` environment variable can select another model available to your key. Never put the key in frontend files or commit it. For PowerShell, create a local `.env` file from the safe template if you do not already have one, then edit it:
 
 ```powershell
-$env:RADEON_API_KEY = "your-token-factory-key"
+Copy-Item .env.example .env
+notepad .env
+```
+
+Set `GEMINI_API_KEY=your-gemini-api-key` in that file, save it, and restart `npm start`. Or set it in the current terminal before starting:
+
+```powershell
+$env:GEMINI_API_KEY = "your-gemini-api-key"
 npm start
 ```
 
-At startup, the terminal reports whether `RADEON_API_KEY` is configured (the value is never printed). When **Explain simply** is clicked, the terminal logs whether a request was sent to AMD, served from cache, handled locally as ambiguous, or failed. These logs never include the instruction or key value. Automated tests use mocked responses and do not send real AMD requests.
+Get a key from [Google AI Studio](https://aistudio.google.com/app/apikey). The Windows desktop launcher also reads the same project-root `.env` file. The `.env` file is ignored by git.
 
-The selected instruction is included as the only user message. Every explicit click sends an AMD request when the key is configured, including for ambiguous instructions. A fixed system prompt asks for at most two short sentences, exact meaning preservation, no new medical advice, no dose/schedule/treatment changes, and explicit clarification when ambiguous. Successful results are cached in backend memory by SHA-256 of instruction plus language; concurrent duplicate requests share one provider call. Cache is limited to 200 items and clears when the server restarts. Errors are not cached and are never retried automatically. The browser offers retry only after a user click.
+At startup, the terminal reports whether `GEMINI_API_KEY` is configured (the value is never printed). The app uses Gemini for **Explain simply**, grounded document questions, the Care Agent, and optional care-plan translation. These routes make requests only after a user action. The Gemini key is sent in the server-to-Google `x-goog-api-key` header and is never returned to the browser or written to logs. Automated test fixtures use mocked Gemini responses and do not make live API requests.
 
-The explanation is labeled separately from the original instruction and includes a care-team reminder. It is not clinician approval or a replacement for the original instruction. API responses are mocked in automated tests; implementation and tests make no live AMD requests. To demonstrate one real inference, configure `RADEON_API_KEY`, run `npm start`, open a synthetic care plan, and click **Explain simply** beside one instruction.
+For **Explain simply**, the selected instruction is the only document text sent for that request; the PDF, full plan, patient identity, and conversation history are not sent. A fixed prompt asks for at most two short sentences, exact meaning preservation, no new medical advice, no dose/schedule/treatment changes, and explicit clarification when ambiguous. Gemini responses are schema-checked and independently checked against the source before display. Successful results are cached by instruction and language; simultaneous duplicate requests share one provider call. Error responses are not cached. A retry happens only when a user chooses to retry.
+
+The explanation is labeled separately from the original instruction and includes a care-team reminder. It is not clinician approval or a replacement for the original instruction. Tests mock Gemini responses. To demonstrate one real inference, configure `GEMINI_API_KEY`, restart the server, open a synthetic care plan, and click **Explain simply** beside one instruction. Gemini API quotas and billing depend on your Google AI account and model access.
 
 ## Safety behavior
 
@@ -61,6 +70,20 @@ The explanation is labeled separately from the original instruction and includes
 - Use synthetic data only. Avoid uploading real medical records.
 
 This is a hackathon demo, not a medical device, clinical decision support system, or replacement for a clinician. AI extraction, OCR, automatic whole-site translation, direct calendar integration, real authentication, and durable patient-data storage are not implemented. The demo sign-in is local-only. Local deterministic extraction is limited and must be checked against the PDF source.
+
+## Hackathon presentation assets
+
+- Cover image: `CLEARCARE_AMD_ACT_III_SUBMISSION/cover.png` (1920 × 1080).
+- Editable 9-slide deck: `CLEARCARE_AMD_ACT_III_SUBMISSION/ClearCare_Hackathon_Presentation.pptx`.
+- Narrated 1080p video: `CLEARCARE_AMD_ACT_III_SUBMISSION/videos/ClearCare_Hackathon_Presentation.mp4`.
+- Captions: `CLEARCARE_AMD_ACT_III_SUBMISSION/videos/ClearCare_Hackathon_Presentation.srt`.
+
+The existing deck and video are archived AMD-hackathon materials and still describe the former AMD integration; they have not been regenerated for the Gemini provider change. To regenerate them on Windows with Python Pillow/python-pptx, PowerPoint, and a Windows speech voice installed:
+
+```powershell
+python CLEARCARE_DEMO_AUTOMATION/make-presentation.py
+powershell -ExecutionPolicy Bypass -File CLEARCARE_DEMO_AUTOMATION/export-presentation-video.ps1
+```
 
 ## Checks
 

@@ -16,11 +16,11 @@ flowchart LR
     UI --> QA["qa/intent.js<br/>EN/ES/HI + Hinglish intents, retrieval ≤3"]
   end
   subgraph Server["Local server 127.0.0.1 (same computer)"]
-    R["lib/ext/routes.js"] --> EX["explain-v2.js"] --> AMD
-    R --> ASK["ask.js"] --> AMD
-    AMD["AMDInferenceProvider<br/>ORIGINAL endpoint + DeepSeek-V4-Flash<br/>timeout · 1 retry · telemetry"] --> VER["fidelity.js verifier<br/>(same code as browser)"]
+    R["lib/ext/routes.js"] --> EX["explain-v2.js"] --> GEM
+    R --> ASK["ask.js"] --> GEM
+    GEM["Gemini GenerateContent provider<br/>gemini-3.8-flash by default<br/>timeout · bounded retry · telemetry"] --> VER["fidelity.js verifier<br/>(same code as browser)"]
     R --> OCR["OCRProvider: pdftoppm + tesseract (optional)"]
-    LEG["ORIGINAL /api/explain → amd-explainer.js"] --> DEC["verifyLegacyExplanation decorator"]
+    LEG["ORIGINAL /api/explain → gemini-explainer.js"] --> DEC["verifyLegacyExplanation decorator"]
   end
   UI -- "one instruction" --> R
   QA -- "question + ≤3 excerpts" --> R
@@ -33,11 +33,11 @@ sequenceDiagram
   participant P as Patient
   participant B as Browser (ClearCare)
   participant S as Local server
-  participant A as AMD Token Factory
+  participant A as Google Gemini API
   P->>B: Upload discharge PDF
   B->>B: pdf.js text + layout → engine → safety (no network)
   B-->>P: Today: briefing text + "Hear my day" (+ autoplay only with consent)
-  P->>B: Explain with AMD AI (one card)
+  P->>B: Explain with Gemini (one card)
   B->>S: { instruction, language, mode }
   S->>S: re-parse; unclear → stop (no AI call)
   S->>A: system rules + <instruction> only
@@ -59,10 +59,10 @@ sequenceDiagram
 | SourceEvidenceMapper | `engine.js` `provenance { text, page, lines, method, confidence, statements[] }` |
 | ClinicalExtractionProvider | `public/ext/clinical/engine.js` + `vocab.js` |
 | ClinicalSafetyValidator | `engine.js` reasons and clarity, which gate `schedulable` |
-| StructuredOutputValidator | `lib/ext/amd-provider.js#parseJsonObject` |
+| StructuredOutputValidator | `lib/ext/gemini-provider.js#parseJsonObject` |
 | SourceGroundingValidator / AIResponseVerifier | `public/ext/clinical/fidelity.js#verifyExplanation` |
-| AMDInferenceProvider / InferenceTelemetry / InferenceFallbackStrategy | `lib/ext/amd-provider.js` (fallback = labelled rule-based rendering; never a fabricated AI text) |
-| ExplanationProvider / ExplanationStrategy | `lib/ext/explain-v2.js` (AMD), `public/ext/clinical/render.js` (rules) |
+| GeminiInferenceProvider / InferenceTelemetry / InferenceFallbackStrategy | `lib/ext/gemini-provider.js` (fallback = labelled rule-based rendering; never a fabricated AI text) |
+| ExplanationProvider / ExplanationStrategy | `lib/ext/explain-v2.js` (Gemini), `public/ext/clinical/render.js` (rules) |
 | LanguageProvider / LanguageDetectionProvider | `public/ext/i18n.js`, `qa/intent.js#detectLanguage` |
 | SpeechSynthesisProvider / SpeechRecognitionProvider / SpeechPlaybackController | `public/ext/ui/voice.js` |
 | SpeechVerificationService | `public/ext/speech/normalize.js` |
@@ -71,8 +71,8 @@ sequenceDiagram
 | PatientPreferenceProvider / CarePlanRepository | `main.js` localStorage wrapper (opt-in plan persistence), export and delete |
 | ComprehensionCheckProvider | Card controls: I understand / Explain again / Speak more slowly / Show original / I need clarification |
 
-## Which components use AMD
+## Which components use Gemini
 
-| Uses AMD inference | Does **not** use AMD (deterministic or browser) |
+| Uses Gemini inference | Does **not** use Gemini (deterministic or browser) |
 |---|---|
 | Original `/api/explain` (unchanged) · `/api/v2/explain` (3 modes) · `/api/v2/ask` (open questions only) | PDF reading (pdf.js) · OCR (tesseract) · extraction and safety rules · rule-based rendering · briefing · speech (Web Speech API) · intents |

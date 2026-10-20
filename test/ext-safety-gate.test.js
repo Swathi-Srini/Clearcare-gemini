@@ -38,7 +38,7 @@ test('the safety gate runs before answering, and before the Care Agent calls any
   const r = answerLocally('I have chest pain', { plan: p, day: buildDay(p, { date: '2026-10-17' }), lang: 'en' });
   assert.equal(r.safety, 'urgent'); assert.ok(!r.needsAI);
   let called = false;
-  const a = await runCareAgent({ question: 'Can I double my apixaban?', language: 'en', today: '2026-10-17', items: p.items, visits: [] }, { fetchImpl: async () => { called = true; return new Response('{}'); }, env: { RADEON_API_KEY: 'x' } });
+  const a = await runCareAgent({ question: 'Can I double my apixaban?', language: 'en', today: '2026-10-17', items: p.items, visits: [] }, { fetchImpl: async () => { called = true; return new Response('{}'); }, env: { GEMINI_API_KEY: 'x' } });
   assert.equal(a.status, 'escalated'); assert.equal(a.safety, 'med_change'); assert.equal(called, false, 'no AI request was made');
 });
 

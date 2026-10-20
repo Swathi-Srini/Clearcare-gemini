@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { lock, unlock, verifyTranslation, translateV2, resetTranslateForTests, asciiDigits } from '../lib/ext/translate.js';
 import { planFor, runCareAgent, makeTools } from '../lib/ext/agent.js';
-import { amdChat, resetTelemetryForTests, amdQueueStatus } from '../lib/ext/amd-provider.js';
+import { geminiGenerate, resetTelemetryForTests, geminiQueueStatus } from '../lib/ext/gemini-provider.js';
 import { visitEventLines } from '../public/ext/calendar/ics.js';
 import { extractInstructions } from '../public/ext/clinical/engine.js';
 import { pagesFromPlainText } from '../public/ext/document/layout.js';
 
-const env = { RADEON_API_KEY: 'test-secret' };
-const reply = content => new Response(JSON.stringify({ choices: [{ message: { content: typeof content === 'string' ? content : JSON.stringify(content) } }] }), { status: 200 });
+const env = { GEMINI_API_KEY: 'test-secret' };
+const reply = content => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: typeof content === 'string' ? content : JSON.stringify(content) }] } }], modelVersion: 'gemini-3.8-flash' }), { status: 200 });
 
 test('lock/unlock protects medicine names, doses, times and numbers', () => {
   const l = lock('Take 1 tablet of Paracetamol 500 mg twice a day at 8:00 AM for 5 days. Call 108.');
@@ -34,7 +34,7 @@ test('translateV2 uses one AI request, restores locked values, and withholds lin
   let calls = 0;
   const fetchImpl = async (_url, opts) => {
     calls++;
-    const items = JSON.parse(JSON.parse(opts.body).messages[1].content).items;
+    const items = JSON.parse(JSON.parse(opts.body).contents[0].parts[0].text).items;
     assert.ok(items[0].includes('[[1]]') && !/ibuprofen|400/.test(items[0]), 'names and numbers are not sent as text');
     return reply({ t: ['[[1]] [[2]] எடுக்க வேண்டாம்.', 'காலை வணக்கம்.', 'எடுக்கவும்.'], en: ['Do not take [[1]] [[2]].', 'Good morning.', 'Take it.'] });
   };
@@ -90,12 +90,12 @@ test('Care Agent still answers from its tools when the AI is busy', async () => 
 
 test('requests are spaced when a per-minute limit is configured', async () => {
   resetTelemetryForTests();
-  const spaced = { ...env, CLEARCARE_AMD_MIN_INTERVAL_MS: '150' };
+  const spaced = { ...env, GEMINI_MIN_INTERVAL_MS: '150' };
   const times = [];
   const fetchImpl = async () => { times.push(Date.now()); return reply('ok'); };
-  await Promise.all([amdChat({ system: 's', user: 'u', fetchImpl, env: spaced }), amdChat({ system: 's', user: 'u', fetchImpl, env: spaced })]);
+  await Promise.all([geminiGenerate({ system: 's', user: 'u', fetchImpl, env: spaced }), geminiGenerate({ system: 's', user: 'u', fetchImpl, env: spaced })]);
   assert.ok(times[1] - times[0] >= 140, `second call waited ${times[1] - times[0]} ms`);
-  assert.equal(amdQueueStatus(spaced).intervalMs, 150);
+  assert.equal(geminiQueueStatus(spaced).intervalMs, 150);
   resetTelemetryForTests();
 });
 

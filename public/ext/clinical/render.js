@@ -140,12 +140,12 @@ export function renderItem(item, lang = 'en', mode = 'simple') {
   if (item.category === 'note') {
     if (item.docLang === lang) return { text: item.text, steps: [], untranslated: false, method: 'original' };
     const name = { hi: L('Hindi', 'hindi', 'हिंदी'), es: L('Spanish', 'español', 'स्पेनिश') }[item.docLang] || L('another language', 'otro idioma', 'दूसरी भाषा');
-    return { text: pick(L(`This instruction is written in ${name.en} in your document: “${item.text}”. Use “Explain with AMD AI” or ask your care team.`, `Esta indicación está escrita en ${name.es} en su documento: “${item.text}”. Use “Explicar con IA de AMD” o pregunte a su equipo.`, `यह निर्देश आपके दस्तावेज़ में ${name.hi} में लिखा है: “${item.text}”। “AMD AI से समझाएँ” दबाएँ या अपनी टीम से पूछें।`), lang), steps: [], untranslated: true };
+    return { text: pick(L(`This instruction is written in ${name.en} in your document: “${item.text}”. Use “Explain with Gemini AI” or ask your care team.`, `Esta indicación está escrita en ${name.es} en su documento: “${item.text}”. Use “Explicar con IA de Gemini” o pregunte a su equipo.`, `यह निर्देश आपके दस्तावेज़ में ${name.hi} में लिखा है: “${item.text}”। “Gemini AI से समझाएँ” दबाएँ या अपनी टीम से पूछें।`), lang), steps: [], untranslated: true };
   }
   const sev = item.severity ? pick(SEVERITY[item.severity], lang) : '';
   const r = renderFreeText(item.text, lang);
   const reasons = item.clarity !== 'clear' ? item.reasons.map(x => reasonText(x.code, lang)) : [];
-  if (!r) return { text: [sev, pick(L('', 'Esta indicación está en inglés en su documento. Use “Explicar con IA de AMD” para una explicación verificada en español, o pida ayuda a su equipo.', 'यह निर्देश आपके दस्तावेज़ में अंग्रेज़ी में है। हिंदी में जाँचा हुआ स्पष्टीकरण पाने के लिए “AMD AI से समझाएँ” दबाएँ, या अपनी टीम से पूछें।'), lang), ...reasons].filter(Boolean).join(' '), steps: [], untranslated: true };
+  if (!r) return { text: [sev, pick(L('', 'Esta indicación está en inglés en su documento. Use “Explicar con IA de Gemini” para una explicación verificada en español, o pida ayuda a su equipo.', 'यह निर्देश आपके दस्तावेज़ में अंग्रेज़ी में है। हिंदी में जाँचा हुआ स्पष्टीकरण पाने के लिए “Gemini AI से समझाएँ” दबाएँ, या अपनी टीम से पूछें।'), lang), ...reasons].filter(Boolean).join(' '), steps: [], untranslated: true };
   return { text: [sev, r.text, ...reasons].filter(Boolean).join(' '), steps: mode === 'steps' ? [r.text] : [], untranslated: false, method: r.method };
 }
 

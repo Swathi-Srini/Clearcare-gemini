@@ -1,6 +1,6 @@
 // Patient-journey E2E (Playwright): onboarding → upload → Calendar Agent → refresh persistence →
 // completion tracking → Kannada → safety gate → Care Agent → voice interruption → duplicate-reminder
-// prevention → keyboard-only use → AMD failure handling → accessibility. Uses a LOOPBACK MOCK of the AMD
+// prevention → keyboard-only use → Gemini failure handling → accessibility. Uses a LOOPBACK MOCK of the Gemini
 // endpoint (labelled TEST MOCK in the UI), mock speech and a fixed clock, so results are repeatable.
 //   PLAYWRIGHT_PATH=… [AXE_PATH=…] [CLEARCARE_E2E_CHANNEL=msedge] node e2e/run-journey.mjs
 import { createRequire } from 'node:module';
@@ -17,21 +17,21 @@ if (!pw) { console.error('Playwright not installed. Set PLAYWRIGHT_PATH or npm i
 const results = [];
 const rec = (id, name, ok, detail = '') => { results.push({ id, name, status: ok ? 'PASS' : 'FAIL', detail }); console.log(`${ok ? '✔' : '✘'} ${id} ${name}${detail ? ' — ' + detail : ''}`); };
 
-// ---- loopback mock AMD ----
+// ---- loopback mock Gemini ----
 let mockMode = 'ok', mockCalls = 0;
 const mock = createServer((rq, rs) => { let b = ''; rq.on('data', c => (b += c)); rq.on('end', () => {
   mockCalls++;
   if (mockMode === '401') { rs.writeHead(401); return rs.end('{}'); }
-  const body = JSON.parse(b || '{}'); const sys = body.messages[0].content, user = body.messages[1].content;
+  const body = JSON.parse(b || '{}'); const sys = body.systemInstruction.parts[0].text, user = body.contents[0].parts.map(p => p.text || '').join('');
   let content;
   if (/translate short patient-care texts/.test(sys)) { const items = JSON.parse(user).items; content = JSON.stringify({ t: items.map(t => 'ಕನ್ನಡ: ' + t), en: items }); }
   else if (/Care Agent/.test(sys)) { const ids = [...user.matchAll(/"id":"([^"]+)"/g)].map(m => m[1]); const v = ids.find(i => i.startsWith('agent-appointment') || i.startsWith('appointment')); content = JSON.stringify({ reasoning: ['The follow-up is on 2026-10-19 at 09:00; the place is missing.'], answer: 'Your follow-up is on October 19 at 9:00 AM. The papers do not give the place, so please confirm it with your care team.', sources: v ? [v] : [], confidence: 'medium' }); }
   else content = JSON.stringify({ explanation: 'Take 500 mg of acetaminophen every 6 hours only if you need it for pain, and do not take more than 3,000 mg in 24 hours.', steps: [] });
-  rs.writeHead(200, { 'content-type': 'application/json' }); rs.end(JSON.stringify({ id: 'mock-' + mockCalls, choices: [{ message: { content } }] }));
+  rs.writeHead(200, { 'content-type': 'application/json' }); rs.end(JSON.stringify({ responseId: 'mock-' + mockCalls, modelVersion: 'gemini-3.8-flash', candidates: [{ content: { parts: [{ text: content }] } }] }));
 }); });
 await new Promise(r => mock.listen(0, '127.0.0.1', r));
 const port = 4900 + Math.floor(Math.random() * 300);
-const server = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(port), RADEON_API_KEY: 'e2e-test-key', CLEARCARE_AMD_BASE_URL: `http://127.0.0.1:${mock.address().port}`, CLEARCARE_AMD_MIN_INTERVAL_MS: '0', CLEARCARE_TRANSLATION_CACHE: join(root, 'docs/evidence/.e2e-translation-cache.json') }, stdio: 'ignore' });
+const server = spawn(process.execPath, ['server.js'], { cwd: root, env: { ...process.env, PORT: String(port), GEMINI_API_KEY: 'e2e-test-key', CLEARCARE_GEMINI_BASE_URL: `http://127.0.0.1:${mock.address().port}/v1beta`, GEMINI_MIN_INTERVAL_MS: '0', CLEARCARE_TRANSLATION_CACHE: join(root, 'docs/evidence/.e2e-translation-cache.json') }, stdio: 'ignore' });
 await new Promise(r => setTimeout(r, 1500));
 const base = `http://127.0.0.1:${port}`;
 
@@ -183,15 +183,15 @@ await t('J17', 'prompt-injection PDF: injected lines quarantined, injected 10 mg
   const body = await text('#cc-today');
   return /looked like instructions to software/.test(body) && !/10 mg/.test(await text('.cc-tabpanel'));
 });
-await t('J18', 'AMD authentication failure: the explanation shows an honest error, nothing crashes', async () => {
+await t('J18', 'Gemini authentication failure: the explanation shows an honest error, nothing crashes', async () => {
   await loadSample('01_everyday_recovery.pdf'); mockMode = '401';
   await page.click('[data-tab="medicines"]'); await page.click('[data-act="ai"]'); await page.waitForSelector('.cc-ai-warn');
   mockMode = 'ok'; const w = await text('.cc-ai-warn'); if (!/rejected/i.test(w)) throw new Error('unclear message: ' + w.slice(0, 160)); return w.trim().slice(0, 140);
 });
 await t('J19', 'AI activity panel shows provider, model and request ids (mock-labelled here)', async () => {
-  await page.click('[data-act="amd-refresh"]').catch(() => {}); await page.waitForTimeout(500);
+  await page.click('[data-act="gemini-refresh"]').catch(() => {}); await page.waitForTimeout(500);
   const s = await text('.cc-amd-activity');
-  return /AMD Developer Cloud Token Factory/.test(s) && /DeepSeek-V4-Flash/.test(s) ? 'panel rendered' : false;
+  return /Google Gemini API/.test(s) && /gemini-3\.8-flash/.test(s) ? 'panel rendered' : false;
 });
 const axePath = [process.env.AXE_PATH, join(root, 'node_modules/axe-core/axe.min.js')].find(p => p && existsSync(p));
 await t('J20', 'axe-core scan of the Calendar (WCAG 2.1 A/AA)', async () => {

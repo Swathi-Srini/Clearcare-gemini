@@ -7,10 +7,11 @@ Add-Type -AssemblyName PresentationFramework
 Set-Location -LiteralPath $PSScriptRoot
 function Fail($msg) { [System.Windows.MessageBox]::Show($msg, 'ClearCare', 'OK', 'Error') | Out-Null; exit 1 }
 
-# Optional settings from .env (RADEON_API_KEY, PORT). Lines starting with # are ignored.
+# Optional settings from .env (GEMINI_API_KEY, GEMINI_MODEL, PORT). Lines starting with # are ignored.
 if (Test-Path -LiteralPath '.env') {
+  $allowedSettings = @('GEMINI_API_KEY', 'GEMINI_MODEL', 'GEMINI_MIN_INTERVAL_MS', 'PORT', 'CLEARCARE_GEMINI_BASE_URL', 'CLEARCARE_TRANSLATION_CACHE')
   foreach ($line in Get-Content -LiteralPath '.env') {
-    if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') { [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim().Trim('"', "'"), 'Process') }
+    if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$' -and $Matches[1] -in $allowedSettings) { [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim().Trim('"', "'"), 'Process') }
   }
 }
 if ($CreateShortcut) {

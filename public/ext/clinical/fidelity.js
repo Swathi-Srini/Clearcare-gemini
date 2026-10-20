@@ -1,6 +1,6 @@
 // SourceGroundingValidator / AIResponseVerifier.
 // Independent, deterministic meaning checks of an explanation against its source.
-// Used on every AMD output before display and in tests on every deterministic rendering.
+// Used on every Gemini output before display and in tests on every deterministic rendering.
 import { GENERICS, BRANDS } from './vocab.js';
 import { normalizeLang } from '../i18n.js';
 

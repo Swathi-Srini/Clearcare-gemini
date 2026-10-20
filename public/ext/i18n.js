@@ -39,7 +39,7 @@ const T = {
   simple: { en: 'Simple', es: 'Sencillo', hi: 'आसान' },
   detailed: { en: 'Detailed', es: 'Detallado', hi: 'विस्तार से' },
   steps: { en: 'Step by step', es: 'Paso a paso', hi: 'एक-एक करके' },
-  explainAI: { en: 'Explain with AMD AI', es: 'Explicar con IA de AMD', hi: 'AMD AI से समझाएँ' },
+  explainAI: { en: 'Explain with Gemini AI', es: 'Explicar con IA de Gemini', hi: 'Gemini AI से समझाएँ' },
   ask: { en: 'Ask about your document', es: 'Pregunte sobre su documento', hi: 'अपने दस्तावेज़ के बारे में पूछें' },
   askPlaceholder: { en: 'For example: When is my follow-up?', es: 'Por ejemplo: ¿Cuándo es mi cita?', hi: 'जैसे: मेरा फ़ॉलो-अप कब है?' },
   send: { en: 'Ask', es: 'Preguntar', hi: 'पूछें' },
@@ -48,7 +48,7 @@ const T = {
   fromDocument: { en: 'From your document', es: 'De su documento', hi: 'आपके दस्तावेज़ से' },
   page: { en: 'page', es: 'página', hi: 'पृष्ठ' },
   rulesLabel: { en: 'Explained by ClearCare rules (not AI)', es: 'Explicado por reglas de ClearCare (no IA)', hi: 'ClearCare नियमों से समझाया गया (AI नहीं)' },
-  aiLabel: { en: 'AMD AI explanation · checked against your document', es: 'Explicación de IA de AMD · verificada con su documento', hi: 'AMD AI स्पष्टीकरण · आपके दस्तावेज़ से जाँचा गया' },
+  aiLabel: { en: 'Gemini AI explanation · checked against your document', es: 'Explicación de IA de Gemini · verificada con su documento', hi: 'Gemini AI स्पष्टीकरण · आपके दस्तावेज़ से जाँचा गया' },
   withheld: { en: 'We couldn’t safely simplify this one. Please read your document’s own words below and check with your care team.', es: 'No pudimos simplificar esto con seguridad. Lea las palabras de su documento abajo y consulte con su equipo de atención.', hi: 'इसे सुरक्षित रूप से आसान नहीं बना सके। कृपया नीचे दस्तावेज़ के अपने शब्द पढ़ें और अपनी देखभाल टीम से पूछें।' },
   markTaken: { en: 'I took this dose', es: 'Tomé esta dosis', hi: 'मैंने यह खुराक ले ली' },
   markDone: { en: 'Mark done', es: 'Marcar hecho', hi: 'हो गया' },
@@ -59,7 +59,7 @@ const T = {
 };
 export function t(key, lang) { const e = T[key]; if (!e) return key; return e[normalizeLang(lang)] ?? e.en; }
 
-// More languages: ClearCare's own text is shown in English, then translated by AMD AI and only
+// More languages: ClearCare's own text is shown in English, then translated by Gemini AI and only
 // displayed when a back-translation passes the same fidelity checks (see lib/ext/translate.js).
 // [code, English name, native name, speech BCP-47 preferences, right-to-left]
 export const EXTRA_LANGS = Object.freeze(Object.fromEntries([

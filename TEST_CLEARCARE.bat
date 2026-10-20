@@ -23,12 +23,11 @@ if %NODEMAJOR% LSS 18 (
 if %NODEMAJOR% LSS 22 echo [NOTE] Node ^< 22.13: server-side pdf.js tests will be SKIPPED ^(browser still uses pdf.js^).
 if %NODEMAJOR% EQU 22 if %NODEMINOR% LSS 13 echo [NOTE] Node ^< 22.13: server-side pdf.js tests will be SKIPPED ^(browser still uses pdf.js^).
 
-rem Optional .env (RADEON_API_KEY=..., PORT=...). Lines starting with # are ignored.
+rem Optional .env (GEMINI_API_KEY=..., GEMINI_MODEL=..., PORT=...). Lines starting with # are ignored.
 if exist ".env" (
-  for /f "usebackq eol=# tokens=1,* delims==" %%A in (".env") do if not "%%A"=="" set "%%A=%%B"
-  echo Loaded settings from .env
+  echo Gemini settings will be read by ClearCare from .env.
 )
-if defined RADEON_API_KEY (echo AMD key: configured - the smoke test will make ONE live AMD call.) else (echo AMD key: not set - live AMD call will be skipped and reported as not configured.)
+echo The smoke test makes ONE live Gemini request only when GEMINI_API_KEY is configured.
 echo.
 
 set LOG=test-results.txt
@@ -42,7 +41,7 @@ for %%F in (server.js public\app.js public\ext\main.js lib\ext\routes.js) do (
 )
 if "!SYNTAX_OK!"=="1" (echo       PASS) else (echo       FAIL - see %LOG%)
 
-echo [2/3] Unit, safety, language, calendar, AMD-mock and security tests (node --test) ...
+echo [2/3] Unit, safety, language, calendar, Gemini-mock and security tests (node --test) ...
 call npm test >> "%LOG%" 2>&1
 set UNIT_RC=!errorlevel!
 for /f "tokens=2,3" %%a in ('findstr /b /c:"# tests" /c:"# pass" /c:"# fail" /c:"# skipped" "%LOG%"') do echo       %%a %%b

@@ -1,6 +1,6 @@
 // Grounded question handling for English, Spanish, Hindi (Devanagari) and romanised Hindi
 // ("Hinglish"). Deterministic intents are answered from the plan; open questions retrieve
-// at most 3 instructions for the AMD provider. If nothing matches: "not in your document".
+// at most 3 instructions for Gemini. If nothing matches: "not in your document".
 import { renderItemSafe as renderItem, reasonText, formatDate, formatTime } from '../clinical/render.js';
 import { GLOSSARY, ABBREVIATIONS } from '../clinical/vocab.js';
 import { normalizeLang } from '../i18n.js';

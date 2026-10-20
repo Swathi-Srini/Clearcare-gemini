@@ -1,0 +1,33 @@
+digraph ClearCare {
+ graph [rankdir=LR, bgcolor="#F4F8F7", pad="0.48", nodesep="0.52", ranksep="0.75", splines=polyline, fontname="Segoe UI", fontsize=22, labelloc=t, labeljust=l, label=<<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2"><TR><TD ALIGN="LEFT"><FONT FACE="Segoe UI" POINT-SIZE="30" COLOR="#173E46"><B>CLEARCARE</B><FONT COLOR="#43897F">  /  </FONT><B>DISCHARGE DATA FLOW</B></FONT></TD></TR><TR><TD ALIGN="LEFT"><FONT FACE="Segoe UI" POINT-SIZE="14" COLOR="#557078">From source document to understandable, reviewable next steps — with privacy and safety gates</FONT></TD></TR><TR><TD ALIGN="LEFT"><FONT FACE="Segoe UI" POINT-SIZE="11" COLOR="#637B7E">PDF stays in the browser · AMD key stays on the server · only a user-selected instruction is sent for explanation</FONT></TD></TR></TABLE>>];
+ node [shape=box, style="rounded,filled", color="#D5E4E1", penwidth=1.4, fillcolor="#FFFFFF", fontname="Segoe UI", fontsize=14, fontcolor="#183E46", margin="0.22,0.18"];
+ edge [color="#618981", penwidth=1.8, arrowsize=0.8, fontname="Segoe UI", fontsize=11, fontcolor="#49656A"];
+
+ appt [label=<<B>3 · Appointment evidence</B><BR/><FONT POINT-SIZE="12">Date · time · location from source</FONT>>, fillcolor="#EAF3F1"];
+ calendar [label=<<B>Calendar eligibility gate</B><BR/><FONT POINT-SIZE="12">Confirmed + complete details</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">Review-needed/incomplete = blocked</FONT>>, fillcolor="#F5FBF9", color="#78A99D"];
+ ics [label=<<B>Download .ics</B><BR/><FONT POINT-SIZE="12">User imports into their calendar</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">No direct calendar integration</FONT>>];
+ blocked [label=<<B>Keep unscheduled</B><BR/><FONT POINT-SIZE="12">Show missing detail + source</FONT><BR/><FONT POINT-SIZE="11" COLOR="#8B5A1B">Ask care team to clarify</FONT>>, fillcolor="#FFF5E7", color="#E6C48E"];
+ appt -> calendar;
+ calendar -> ics [label="eligible"];
+ calendar -> blocked [label="not eligible", color="#C58A3B", fontcolor="#8B5A1B"];
+
+ click [label=<<B>2 · User taps “Explain simply”</B><BR/><FONT POINT-SIZE="12">One selected instruction + language</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">No request on page load</FONT>>, fillcolor="#F0F7F6"];
+ backend [label=<<B>ClearCare local backend</B><BR/><FONT POINT-SIZE="12">Fixed safety prompt · schema checks</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">RADEON_API_KEY stays server-side</FONT>>];
+ amd [label=<<B>AMD Developer Cloud</B><BR/><FONT POINT-SIZE="12">Token Factory · DeepSeek-V4-Flash</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">Selected instruction only</FONT>>, fillcolor="#E8F3F1", color="#73A69A"];
+ verify [label=<<B>Verify against source</B><BR/><FONT POINT-SIZE="12">Numbers · units · medicine names</FONT><BR/><FONT POINT-SIZE="12">Negation · frequency · language</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">Pass: show by original · fail: withhold</FONT>>];
+ click -> backend [label="instruction + language"];
+ backend -> amd [label="authenticated HTTPS"];
+ amd -> verify [label="response JSON"];
+
+ pdf [label=<<B>1 · Discharge PDF</B><BR/><FONT POINT-SIZE="12" COLOR="#637B7E">Synthetic demo or selected file</FONT><BR/><FONT POINT-SIZE="11" COLOR="#43897F">Read in browser · not uploaded</FONT>>, fillcolor="#EAF3F1"];
+ extract [label=<<B>Read text locally</B><BR/><FONT POINT-SIZE="12">pdf.js text + page layout</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">No AI PDF processing</FONT>>];
+ structure [label=<<B>Structure care facts</B><BR/><FONT POINT-SIZE="12">Medications · doses · changes</FONT><BR/><FONT POINT-SIZE="12">Care steps · appointment details</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">Keep exact source evidence</FONT>>];
+ gate [label=<<B>Deterministic safety checks</B><BR/><FONT POINT-SIZE="12">Schema · missing units · conflicts</FONT><BR/><FONT POINT-SIZE="12">Ambiguity · high-risk medicines</FONT><BR/><FONT POINT-SIZE="11" COLOR="#637B7E">No guessing; retain original</FONT>>, fillcolor="#E8F3F1", color="#78A99D"];
+ plan [label=<<B>Patient care plan</B><BR/><FONT POINT-SIZE="12">Original beside plain-language view</FONT><BR/><FONT POINT-SIZE="12">Confirmed · Needs review · Incomplete</FONT>>, fillcolor="#E8F3F1", color="#73A69A", penwidth=1.7];
+ review [label=<<B>Needs a second look</B><BR/><FONT POINT-SIZE="12">Ambiguous, conflicting, missing,</FONT><BR/><FONT POINT-SIZE="12">or high-risk items stay unconfirmed</FONT><BR/><FONT POINT-SIZE="11" COLOR="#8B5A1B">Care-team clarification required</FONT>>, fillcolor="#FFF5E7", color="#E6C48E"];
+ pdf -> extract [label="local"];
+ extract -> structure [label="text + layout"];
+ structure -> gate [label="facts + source"];
+ gate -> plan [label="clear facts + status"];
+ gate -> review [label="needs review", color="#C58A3B", fontcolor="#8B5A1B"];
+}

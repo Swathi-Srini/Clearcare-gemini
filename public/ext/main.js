@@ -70,7 +70,7 @@ function currentBriefing() {
 }
 
 // ---------------- more languages (AI translation, verified on the server) ----------------
-// ClearCare's own English text is translated by AMD in batches; a line is shown translated only when
+// ClearCare's own English text is translated by Gemini in batches; a line is shown translated only when
 // the server's checks passed, otherwise it stays in English. The AI key may allow one request a
 // minute, so translations are cached in this browser and on this computer.
 const xl = () => (EXTRA_LANGS[state.prefs.xlang] ? state.prefs.xlang : null);
@@ -102,7 +102,7 @@ async function flushTx() {
     store.set(KEYS.xcache, Object.fromEntries([...xcache].filter(([, v]) => v).slice(-1500)));
     state.xmsg = '';
   } catch (e) {
-    state.xmsg = e.code === 'not_configured' ? ' AI translation needs the AMD key on this computer. Showing English.' : ' The AI is busy. Translation will try again in a minute; English is shown meanwhile.';
+    state.xmsg = e.code === 'not_configured' ? ' AI translation needs the Gemini key on this computer. Showing English.' : ' The AI is busy. Translation will try again in a minute; English is shown meanwhile.';
     xbusy = false; renderXStatus(); setTimeout(flushTx, 60000); return;
   }
   xbusy = false;
@@ -121,7 +121,7 @@ function txHtml(text, { tag = 'span', cls = '' } = {}) {
   const r = tx(text), lang = state.prefs.lang;
   const code = r.code || (xl() ? 'en' : lang);
   const attrs = `lang="${(EXTRA_LANGS[code] || LANGS[normalizeLang(code)]).bcp47}"${EXTRA_LANGS[code]?.rtl ? ' dir="rtl"' : ''}${cls ? ` class="${cls}"` : ''}`;
-  const note = !xl() ? '' : r.code ? ' <span class="cc-x-tag" title="AI translation by AMD. Numbers, doses and medicine names were locked and checked.">🌐</span>' : r.pending ? ' <span class="cc-x-tag" title="Translating…">…</span>' : ' <span class="cc-x-tag" title="This line could not be translated safely, so it is shown in English.">EN</span>';
+  const note = !xl() ? '' : r.code ? ' <span class="cc-x-tag" title="AI translation by Gemini. Numbers, doses and medicine names were locked and checked.">🌐</span>' : r.pending ? ' <span class="cc-x-tag" title="Translating…">…</span>' : ' <span class="cc-x-tag" title="This line could not be translated safely, so it is shown in English.">EN</span>';
   return `<${tag} ${attrs}>${esc(r.text)}</${tag}>${note}`;
 }
 
@@ -317,7 +317,7 @@ function title(item) {
 }
 function aiBlock(ai) {
   const lang = state.prefs.lang;
-  if (ai.loading) return `<div class="cc-ai" aria-live="polite"><p>${esc(pick(L('Asking AMD to explain this one instruction…', 'Pidiendo a AMD que explique esta indicación…', 'AMD से इस एक निर्देश को समझाने को कहा जा रहा है…'), lang))}</p></div>`;
+  if (ai.loading) return `<div class="cc-ai" aria-live="polite"><p>${esc(pick(L('Asking Gemini to explain this one instruction…', 'Pidiendo a Gemini que explique esta indicación…', 'Gemini से इस एक निर्देश को समझाने को कहा जा रहा है…'), lang))}</p></div>`;
   if (ai.status === 'verified') return `<div class="cc-ai" aria-live="polite"><p class="cc-label cc-label-ai">${esc(t('aiLabel', lang))}${ai.provider?.mock ? ' · TEST MOCK' : ''} · ${esc(ai.provider?.model || '')}</p><p lang="${LANGS[lang].bcp47}">${esc(ai.explanation)}</p>${ai.steps?.length ? `<ol class="cc-steps">${ai.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}<button type="button" data-act="listen-ai" data-id="${esc(ai.itemId)}">🔊 ${esc(t('listen', lang))}</button></div>`;
   if (ai.status === 'withheld') return `<div class="cc-ai cc-ai-warn" aria-live="polite"><p>${esc(t('withheld', lang))}</p><p class="cc-muted">${esc(pick(L('Checks that failed: ', 'Comprobaciones fallidas: ', 'जो जाँच विफल हुईं: '), lang))}${esc((ai.failures || []).join(', '))}</p></div>`;
   if (ai.status === 'needs_clarification') return `<div class="cc-ai cc-ai-warn" aria-live="polite"><p>${esc(pick(L('This instruction is unclear in your document, so it wasn’t sent to AI. Please ask your care team.', 'Esta indicación no está clara en su documento, así que no se envió a la IA. Pregunte a su equipo.', 'यह निर्देश दस्तावेज़ में साफ़ नहीं है, इसलिए AI को नहीं भेजा गया। कृपया अपनी टीम से पूछें।'), lang))}</p></div>`;
@@ -379,7 +379,7 @@ function render() {
   const lang = state.prefs.lang;
   const { day } = currentBriefing();
   const now = new Date();
-  const amd = state.status?.amd;
+  const gemini = state.status?.gemini;
   view.lang = LANGS[lang].bcp47;
   view.innerHTML = `
   <header class="cc-head">
@@ -389,7 +389,7 @@ function render() {
       <div class="cc-seg" role="radiogroup" aria-label="Language / Idioma / भाषा">${Object.values(LANGS).map(l => `<button type="button" role="radio" aria-checked="${l.code === lang && !xl()}" data-lang="${l.code}" lang="${l.bcp47}">${esc(l.label)}</button>`).join('')}</div>
       <select class="cc-xlang" data-xlang aria-label="More languages (AI translation)"><option value="">🌐 ${esc(pick(L('More languages…', 'Más idiomas…', 'और भाषाएँ…'), lang))}</option>${Object.values(EXTRA_LANGS).map(x => `<option value="${x.code}" ${xl() === x.code ? 'selected' : ''}>${esc(`${x.native} · ${x.name}`)}</option>`).join('')}</select>
       <div class="cc-seg" role="radiogroup" aria-label="${esc(pick(L('Explanation style', 'Estilo de explicación', 'समझाने का तरीका'), lang))}">${['simple', 'detailed', 'steps'].map(m => `<button type="button" role="radio" aria-checked="${state.prefs.mode === m}" data-mode="${m}">${esc(t(m, lang))}</button>`).join('')}</div>
-      <span class="cc-amd ${amd?.configured ? 'is-on' : ''}" title="${esc(amd ? `${amd.provider} · ${amd.model}` : '')}">AMD AI: ${esc(amd ? (amd.configured ? (amd.mock ? 'test mock' : pick(L('ready', 'listo', 'तैयार'), lang)) : pick(L('not set up on this computer', 'no configurada en este equipo', 'इस कंप्यूटर पर सेट नहीं'), lang)) : '…')}</span>
+      <span class="cc-gemini ${gemini?.configured ? 'is-on' : ''}" title="${esc(gemini ? `${gemini.provider} · ${gemini.model}` : '')}">Gemini AI: ${esc(gemini ? (gemini.configured ? (gemini.mock ? 'test mock' : pick(L('ready', 'listo', 'तैयार'), lang)) : pick(L('not set up on this computer', 'no configurada en este equipo', 'इस कंप्यूटर पर सेट नहीं'), lang)) : '…')}</span>
     </div>
   </header>
   ${docStrip()}
@@ -400,7 +400,7 @@ function render() {
         <button type="button" data-act="pause">${esc(player.state === 'paused' ? t('resume', lang) : t('pause', lang))}</button>
         <button type="button" data-act="stop">■ ${esc(t('stop', lang))}</button>
       </div></div>
-    <p class="cc-voice-status" id="cc-voice-status" role="status">${esc(state.voiceMsg || '')}</p>${xl() ? `<p class="cc-x-note">🌐 ${esc(`${EXTRA_LANGS[xl()].native}: AI translation by AMD. Medicine names, doses and numbers are locked and checked; a line that fails the check stays in English (EN).`)}<span id="cc-x-status">${esc(state.xmsg)}</span></p>` : ''}
+    <p class="cc-voice-status" id="cc-voice-status" role="status">${esc(state.voiceMsg || '')}</p>${xl() ? `<p class="cc-x-note">🌐 ${esc(`${EXTRA_LANGS[xl()].native}: AI translation by Gemini. Medicine names, doses and numbers are locked and checked; a line that fails the check stays in English (EN).`)}<span id="cc-x-status">${esc(state.xmsg)}</span></p>` : ''}
     <ol class="cc-transcript" aria-label="${esc(pick(L('Transcript', 'Transcripción', 'लिखित रूप'), lang))}">${briefing.map((s, i) => `<li data-seg="${i}" class="${state.speakingSeg === i ? 'is-speaking' : ''}">${txHtml(s.text)} <button type="button" class="cc-mini" data-replay="${i}" aria-label="${esc(t('replay', lang))}: ${i + 1}">↻</button></li>`).join('')}</ol>
   </section>
   `;
@@ -413,7 +413,7 @@ function askPanelHtml() {
     <h2 id="cc-ask-h">${esc(pick(L('Ask about your document', 'Pregunta sobre su documento', 'अपने दस्तावेज़ के बारे में पूछें'), lang))}</h2>
     <form class="cc-ask-form" data-form="ask"><label class="cc-sr" for="cc-q">${esc(t('ask', lang))}</label><input id="cc-q" name="q" maxlength="500" autocomplete="off" value="${esc(state.questionDraft)}" placeholder="${esc(t('askPlaceholder', lang))}" lang="${LANGS[lang].bcp47}">
       <button type="button" data-act="mic" class="cc-mic ${recognizer.listening ? 'is-on' : ''}" aria-pressed="${recognizer.listening}" ${recognizer.available ? '' : 'disabled'} title="${esc(recognizer.available ? t('speakQuestion', lang) : pick(L('Voice questions need Chrome or Edge', 'Las preguntas por voz requieren Chrome o Edge', 'बोलकर पूछने के लिए Chrome या Edge चाहिए'), lang))}">🎤 <span class="cc-sr">${esc(t('speakQuestion', lang))}</span></button>
-      <button type="button" data-act="agent" class="cc-agent-btn" title="${esc(pick(L('The Care Agent checks your papers, then sends only relevant evidence to AMD for a grounded answer.', 'El Agente revisa sus documentos y envía a AMD solo la evidencia necesaria para responder.', 'केयर एजेंट आपके कागज़ जाँचता है और जवाब के लिए AMD को सिर्फ़ ज़रूरी जानकारी भेजता है।'), lang))}">🤖 ${esc(pick(L('Ask the Care Agent', 'Preguntar al Agente', 'केयर एजेंट से पूछें'), lang))}</button></form>
+      <button type="button" data-act="agent" class="cc-agent-btn" title="${esc(pick(L('The Care Agent checks your papers, then sends only relevant evidence to Gemini for a grounded answer.', 'El Agente revisa sus documentos y envía a Gemini solo la evidencia necesaria para responder.', 'केयर एजेंट आपके कागज़ जाँचता है और जवाब के लिए Gemini को सिर्फ़ ज़रूरी जानकारी भेजता है।'), lang))}">🤖 ${esc(pick(L('Ask the Care Agent', 'Preguntar al Agente', 'केयर एजेंट से पूछें'), lang))}</button></form>
     ${recognizer.listening ? `<p class="cc-listening" role="status">● ${esc(t('listening', lang))} — ${esc(state.questionDraft || pick(L('Start speaking; your words will appear above.', 'Empiece a hablar; sus palabras aparecerán arriba.', 'बोलना शुरू करें; आपके शब्द ऊपर दिखेंगे।'), lang))}</p>` : state.questionStatus ? `<p class="cc-question-status" role="status">${esc(state.questionStatus)}</p>` : ''}
     <div class="cc-answer" aria-live="polite">${answerHtml()}</div>${agentHtml()}
   </section>`;
@@ -465,7 +465,7 @@ async function explainWithAI(item) {
   try {
     const res = await fetch('/api/v2/explain', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ instruction: item.provenance.text, language: lang, mode }) });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) state.ai.set(key, { status: 'error', error: data.code === 'not_configured' ? pick(L('AI explanation isn’t set up on this computer (no AMD key). The explanation above comes from ClearCare’s rules.', 'La explicación con IA no está configurada en este equipo (sin clave de AMD). La explicación de arriba viene de las reglas de ClearCare.', 'इस कंप्यूटर पर AI स्पष्टीकरण सेट नहीं है (AMD key नहीं)। ऊपर का स्पष्टीकरण ClearCare के नियमों से है।'), lang) : data.error });
+    if (!res.ok) state.ai.set(key, { status: 'error', error: data.code === 'not_configured' ? pick(L('AI explanation isn’t set up on this computer (no Gemini key). The explanation above comes from ClearCare’s rules.', 'La explicación con IA no está configurada en este equipo (sin clave de Gemini). La explicación de arriba viene de las reglas de ClearCare.', 'इस कंप्यूटर पर AI स्पष्टीकरण सेट नहीं है (Gemini key नहीं)। ऊपर का स्पष्टीकरण ClearCare के नियमों से है।'), lang) : data.error });
     else state.ai.set(key, { ...data, itemId: item.id });
   } catch { state.ai.set(key, { status: 'error' }); }
   render();
